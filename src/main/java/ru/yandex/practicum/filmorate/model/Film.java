@@ -19,7 +19,7 @@ public class Film {
     @NotBlank(message = "Описание фильма не может быть пустым")
     private String description;
     @NotNull(message = "Укажите дату релиза")
-    private LocalDate releaseDate;
+    private LocalDate releaseDate; 
     @NotNull(message = "Необходимо указать продолжительность фильма")
     @Positive(message = "Продолжительность фильма должна быть больше 0")
     private Integer duration;

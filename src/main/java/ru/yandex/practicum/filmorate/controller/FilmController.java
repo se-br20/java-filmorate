@@ -16,7 +16,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/films")
 public class FilmController {
-    private final LocalDate MIN_RELEASE_DATE = LocalDate.of(1895, 12, 28);
+    private final LocalDate minReleaseDate = LocalDate.of(1895, 12, 28);
     private final Map<Integer, Film> films = new HashMap<>();
 
     @GetMapping
@@ -30,7 +30,7 @@ public class FilmController {
         if (film.getDescription().length() > 200) {
             throw new ValidationException("Максимальная длина описания — 200 символов");
         }
-        if (film.getReleaseDate().isBefore(MIN_RELEASE_DATE)) {
+        if (film.getReleaseDate().isBefore(minReleaseDate)) {
             log.warn("Ошибка валидации при создании фильма: {}", film);
             throw new ValidationException("Дата релиза должна быть позже 28 " + "декабря 1895 года");
         }
@@ -56,7 +56,7 @@ public class FilmController {
                 oldFilm.setDescription(film.getDescription());
             }
             if (film.getReleaseDate() != null) {
-                if (film.getReleaseDate().isBefore(MIN_RELEASE_DATE)) {
+                if (film.getReleaseDate().isBefore(minReleaseDate)) {
                     log.warn("Ошибка валидации при корректировке фильма: {}", film);
                     throw new ValidationException("Дата релиза должна быть позже 28 декабря 1895 года");
                 }

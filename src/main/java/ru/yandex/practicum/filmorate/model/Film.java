@@ -1,8 +1,6 @@
 package ru.yandex.practicum.filmorate.model;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -11,17 +9,28 @@ import java.time.LocalDate;
 @Data
 @EqualsAndHashCode(of = {"id"})
 public class Film {
+    @Null(groups = Create.class, message = "Id не должен передаваться при создании")
+    @NotNull(groups = Update.class, message = "Id обязателен при обновлении")
     private Integer id;
-    @NotNull(message = "Необходимо название фильма")
-    @NotBlank(message = "Название фильма не может быть пустым")
+    @NotBlank(groups = Create.class, message = "Название фильма не может быть пустым")
     private String name;
-    @NotNull(message = "Необходимо описание фильма")
-    @NotBlank(message = "Описание фильма не может быть пустым")
+    @NotBlank(groups = Create.class, message = "Описание фильма не может быть пустым")
+    @Size(max = 200, groups = {Create.class, Update.class}, message = "Максимальная длина описания — 200 символов")
     private String description;
-    @NotNull(message = "Укажите дату релиза")
+    @NotNull(groups = Create.class, message = "Укажите дату релиза")
     private LocalDate releaseDate;
-    @NotNull(message = "Необходимо указать продолжительность фильма")
-    @Positive(message = "Продолжительность фильма должна быть больше 0")
+    @NotNull(groups = Create.class, message = "Необходимо указать продолжительность фильма")
+    @Positive(groups = {Create.class, Update.class}, message = "Продолжительность фильма должна быть больше 0")
     private Integer duration;
 
+    private static final LocalDate MIN_RELEASE_DATE = LocalDate.of(1895, 12, 28);
+
+    @AssertTrue(groups = {Create.class, Update.class}, message = "Дата релиза должна быть позже 28 " +
+            "декабря 1895 года")
+    public boolean isReleaseDateValid(){
+        if(releaseDate == null){
+            return true;
+        }
+        return !releaseDate.isBefore(MIN_RELEASE_DATE);
+    }
 }

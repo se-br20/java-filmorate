@@ -27,12 +27,6 @@ public class UserController {
 
     @PostMapping
     public User createUser(@Valid @RequestBody User user) {
-        if (user.getLogin().contains(" ")) {
-            throw new ValidationException("Логин не должен содержать пробелы");
-        }
-        if (user.getBirthday().isAfter(LocalDate.now())) {
-            throw new ValidationException("Дата рождения не может быть в будущем");
-        }
         if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
         }
@@ -45,23 +39,19 @@ public class UserController {
     @PutMapping
     public User updateUser(@Valid @RequestBody User user) {
         if (user.getId() == null) {
-            log.warn("Ошибка валидации при создании пользователя: {}", user);
+            log.warn("Ошибка валидации при обновлении пользователя: {}", user);
             throw new ValidationException("Id должен быть указан");
         }
         if (users.containsKey(user.getId())) {
             User oldUser = users.get(user.getId());
             oldUser.setEmail(user.getEmail());
-            if (user.getLogin() != null && !user.getLogin().isBlank() && !user.getLogin().contains(" ")) {
+            if (user.getLogin() != null && !user.getLogin().isBlank()) {
                 oldUser.setLogin(user.getLogin());
             }
             if (user.getName() != null && !user.getName().isBlank()) {
                 oldUser.setName(user.getName());
             }
             if (user.getBirthday() != null) {
-                if (user.getBirthday().isAfter(LocalDate.now())) {
-                    log.warn("Ошибка валидации при обновлении пользователя: {}", user);
-                    throw new ValidationException("Дата рождения не может быть в будущем");
-                }
                 oldUser.setBirthday(user.getBirthday());
             }
             log.info("Обновлён пользователь: {}", oldUser);

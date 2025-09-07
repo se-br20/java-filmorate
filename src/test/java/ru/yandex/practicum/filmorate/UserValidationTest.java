@@ -1,31 +1,22 @@
 package ru.yandex.practicum.filmorate;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 import org.junit.jupiter.api.*;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import ru.yandex.practicum.filmorate.controller.UserController;
+
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public class UserValidationTest {
 
     private static ValidatorFactory factory;
     private static Validator validator;
-
-    private MockMvc mockMvc;
-    private final ObjectMapper mapper = new ObjectMapper();
 
     @BeforeAll
     static void setUpValidator() {
@@ -38,40 +29,92 @@ public class UserValidationTest {
         factory.close();
     }
 
-    @BeforeEach
-    void setupMockMvc() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new UserController()).build();
-    }
-
-    @Test
-    void validUser_noViolations() {
+    private User createValidUser() {
         User user = new User();
         user.setEmail("user@example.com");
         user.setLogin("login");
         user.setName("Name");
         user.setBirthday(LocalDate.of(1990, 1, 1));
+        return user;
+    }
 
+    @Test
+    void validUser_noViolations() {
+        User user = createValidUser();
         Set<ConstraintViolation<User>> violations = validator.validate(user);
         assertThat(violations).isEmpty();
     }
 
     @Test
     void emailBlank_shouldHaveViolation() {
-        User user = new User();
+        User user = createValidUser();
         user.setEmail("");
-        user.setLogin("login");
-        user.setName("Name");
-        user.setBirthday(LocalDate.of(1990, 1, 1));
-
         Set<ConstraintViolation<User>> violations = validator.validate(user);
-        assertThat(violations).isNotEmpty();
+        assertThat(violations)
+                .isNotEmpty()
+                .anyMatch(v -> v.getPropertyPath().toString().equals("email"));
     }
 
     @Test
-    void postUsers_emptyBody_returnsBadRequest() throws Exception {
-        mockMvc.perform(post("/users")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("")) // пустое тело
-                .andExpect(status().isBadRequest());
+    void emailInvalid_shouldHaveViolation() {
+        User user = createValidUser();
+        user.setEmail("invalid-email-without-at");
+        Set<ConstraintViolation<User>> violations = validator.validate(user);
+        assertThat(violations)
+                .isNotEmpty()
+                .anyMatch(v -> v.getPropertyPath().toString().equals("email")
+                        || v.getMessage().toLowerCase().contains("email"));
+    }
+
+    @Test
+    void emailNull_shouldHaveViolation() {
+        User user = createValidUser();
+        user.setEmail(null);
+        Set<ConstraintViolation<User>> violations = validator.validate(user);
+        assertThat(violations)
+                .isNotEmpty()
+                .anyMatch(v -> v.getPropertyPath().toString().equals("email"));
+    }
+
+    @Test
+    void loginWithSpace_shouldHaveViolation() {
+        User user = createValidUser();
+        user.setLogin("bad login");
+        Set<ConstraintViolation<User>> violations = validator.validate(user);
+        assertThat(violations)
+                .isNotEmpty()
+                .anyMatch(v -> v.getPropertyPath().toString().equals("login"));
+    }
+
+    @Test
+    void loginNull_shouldHaveViolation() {
+        User user = createValidUser();
+        user.setLogin(null);
+        Set<ConstraintViolation<User>> violations = validator.validate(user);
+        assertThat(violations)
+                .isNotEmpty()
+                .anyMatch(v -> v.getPropertyPath().toString().equals("login"));
+    }
+
+    @Test
+    void birthdayInFuture_shouldHaveViolation() {
+        User user = createValidUser();
+        user.setBirthday(LocalDate.now().plusDays(1));
+        Set<ConstraintViolation<User>> violations = validator.validate(user);
+        assertThat(violations)
+                .isNotEmpty()
+                .anyMatch(v -> v.getPropertyPath().toString().equals("birthday")
+                        || v.getMessage().toLowerCase().contains("дата рождения")
+                        || v.getMessage().toLowerCase().contains("past"));
+    }
+
+    @Test
+    void birthdayNull_shouldHaveViolation() {
+        User user = createValidUser();
+        user.setBirthday(null);
+        Set<ConstraintViolation<User>> violations = validator.validate(user);
+        assertThat(violations)
+                .isNotEmpty()
+                .anyMatch(v -> v.getPropertyPath().toString().equals("birthday"));
     }
 }

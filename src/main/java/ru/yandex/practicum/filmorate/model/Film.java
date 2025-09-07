@@ -27,8 +27,8 @@ public class Film {
 
     @AssertTrue(groups = {Create.class, Update.class}, message = "Дата релиза должна быть позже 28 " +
             "декабря 1895 года")
-    public boolean isReleaseDateValid(){
-        if(releaseDate == null){
+    public boolean isReleaseDateValid() {
+        if (releaseDate == null) {
             return true;
         }
         return !releaseDate.isBefore(MIN_RELEASE_DATE);

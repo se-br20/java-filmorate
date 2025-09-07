@@ -4,7 +4,9 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import ru.yandex.practicum.filmorate.model.Create;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Update;
@@ -123,7 +125,7 @@ public class FilmValidationTest {
     void validFilm_noViolations_forUpdate() {
         Film film = createValidFilm();
         film.setId(10);
-        film.setDescription("Desc"); 
+        film.setDescription("Desc");
         film.setReleaseDate(LocalDate.of(2000, 1, 1));
         film.setDuration(100);
         Set<ConstraintViolation<Film>> violations = validator.validate(film, Update.class);

@@ -45,7 +45,7 @@ public class UserController {
             if (user.getLogin() != null && !user.getLogin().isBlank()) {
                 oldUser.setLogin(user.getLogin());
             }
-            if (user.getName() != null){
+            if (user.getName() != null) {
                 checkingName(user);
                 oldUser.setName(user.getName());
             }
@@ -67,9 +67,9 @@ public class UserController {
                 .orElse(0);
         return ++currentMaxId;
     }
-    
-    private void checkingName(User user){
-        if (user.getName() == null || user.getName().isBlank()){
+
+    private void checkingName(User user) {
+        if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
         }
     }

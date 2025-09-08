@@ -26,9 +26,7 @@ public class UserController {
 
     @PostMapping
     public User createUser(@Valid @RequestBody User user) {
-        if (user.getName() == null || user.getName().isBlank()) {
-            user.setName(user.getLogin());
-        }
+        checkingName(user);
         log.info("Создан пользователь: {}", user);
         user.setId(getNextId());
         users.put(user.getId(), user);
@@ -47,7 +45,8 @@ public class UserController {
             if (user.getLogin() != null && !user.getLogin().isBlank()) {
                 oldUser.setLogin(user.getLogin());
             }
-            if (user.getName() != null && !user.getName().isBlank()) {
+            if (user.getName() != null){
+                checkingName(user);
                 oldUser.setName(user.getName());
             }
             if (user.getBirthday() != null) {
@@ -68,6 +67,11 @@ public class UserController {
                 .orElse(0);
         return ++currentMaxId;
     }
-
+    
+    private void checkingName(User user){
+        if (user.getName() == null || user.getName().isBlank()){
+            user.setName(user.getLogin());
+        }
+    }
 
 }

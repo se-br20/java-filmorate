@@ -36,18 +36,7 @@ public class FilmController {
     public Film updateFilm(@Validated(Update.class) @RequestBody Film film) {
         if (films.containsKey(film.getId())) {
             Film oldFilm = films.get(film.getId());
-            if (film.getName() != null && !film.getName().isBlank()) {
-                oldFilm.setName(film.getName());
-            }
-            if (film.getDescription() != null && !film.getDescription().isBlank()) {
-                oldFilm.setDescription(film.getDescription());
-            }
-            if (film.getReleaseDate() != null) {
-                oldFilm.setReleaseDate(film.getReleaseDate());
-            }
-            if (film.getDuration() != null) {
-                oldFilm.setDuration(film.getDuration());
-            }
+            updateFilmFields(oldFilm, film);
             log.info("Обновлён фильм: {}", oldFilm);
             return oldFilm;
         }
@@ -62,5 +51,20 @@ public class FilmController {
                 .max()
                 .orElse(0);
         return ++currentMaxId;
+    }
+
+    private void updateFilmFields(Film oldFilm, Film newFilm) {
+        if (newFilm.getName() != null && !newFilm.getName().isBlank()) {
+            oldFilm.setName(newFilm.getName());
+        }
+        if (newFilm.getDescription() != null && !newFilm.getDescription().isBlank()) {
+            oldFilm.setDescription(newFilm.getDescription());
+        }
+        if (newFilm.getReleaseDate() != null) {
+            oldFilm.setReleaseDate(newFilm.getReleaseDate());
+        }
+        if (newFilm.getDuration() != null) {
+            oldFilm.setDuration(newFilm.getDuration());
+        }
     }
 }

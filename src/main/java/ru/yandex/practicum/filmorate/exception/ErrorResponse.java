@@ -1,7 +1,10 @@
 package ru.yandex.practicum.filmorate.exception;
 
+import lombok.Getter;
+
 import java.time.LocalDateTime;
 
+@Getter
 public class ErrorResponse {
     private final String error;
     private final String message;
@@ -13,15 +16,4 @@ public class ErrorResponse {
         this.timestamp = LocalDateTime.now();
     }
 
-    public String getError() {
-        return error;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public LocalDateTime getTimestamp() {
-        return timestamp;
-    }
 }

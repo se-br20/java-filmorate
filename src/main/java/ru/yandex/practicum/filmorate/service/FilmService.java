@@ -56,20 +56,18 @@ public class FilmService {
     }
 
     public void addLike(Integer filmId, Integer userId) {
-        if (!userStorage.exists(userId)) {
-            throw new NotFoundException("User с id " + userId + " не найден");
-        }
         Film film = getById(filmId);
+        userStorage.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User с id " + userId + " не найден"));
         film.getLikes().add(userId);
         filmStorage.update(film);
         log.info("User {} поставил лайк фильму {}", userId, filmId);
     }
 
     public void removeLike(Integer filmId, Integer userId) {
-        if (!userStorage.exists(userId)) {
-            throw new NotFoundException("User с id " + userId + " не найден");
-        }
         Film film = getById(filmId);
+        userStorage.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User с id " + userId + " не найден"));
         film.getLikes().remove(userId);
         filmStorage.update(film);
         log.info("User {} отменил лайк фильма {}", userId, filmId);

@@ -35,10 +35,19 @@ public class UserService {
         }
         User stored = userStorage.findById(user.getId()).orElseThrow(
                 () -> new NotFoundException("User с id " + user.getId() + " не найден"));
-        if (user.getEmail() != null) stored.setEmail(user.getEmail());
-        if (user.getLogin() != null) stored.setLogin(user.getLogin());
-        if (user.getName() != null) stored.setName(user.getName());
-        if (user.getBirthday() != null) stored.setBirthday(user.getBirthday());
+        if (user.getEmail() != null) {
+            stored.setEmail(user.getEmail());
+        }
+        if (user.getLogin() != null) {
+            stored.setLogin(user.getLogin());
+        }
+        if (user.getName() != null) {
+            stored.setName(user.getName());
+        }
+        if (user.getBirthday() != null) {
+            stored.setBirthday(user.getBirthday());
+        }
+        ensureNameForCreate(stored);
         userStorage.update(stored);
         log.info("Updated user {}", stored.getId());
         return stored;
@@ -56,26 +65,34 @@ public class UserService {
         User user = getById(userId);
         User friend = getById(friendId);
 
-        user.getFriends().add(friendId);
-        friend.getFriends().add(userId);
+        makeFriends(user, friend);
 
-        userStorage.update(user);
-        userStorage.update(friend);
-
-        log.info("User {} and {} are now friends", userId, friendId);
+        log.info("User {} и {} теперь друзья", userId, friendId);
     }
 
     public void removeFriend(Integer userId, Integer friendId) {
         User user = getById(userId);
         User friend = getById(friendId);
 
-        user.getFriends().remove(friendId);
-        friend.getFriends().remove(userId);
+        breakFriendship(user, friend);
+
+        log.info("User {} удалён из друзей {}", friendId, userId);
+    }
+
+    private void makeFriends(User user, User friend) {
+        user.getFriends().add(friend.getId());
+        friend.getFriends().add(user.getId());
 
         userStorage.update(user);
         userStorage.update(friend);
+    }
 
-        log.info("Friend {} removed from user {}", friendId, userId);
+    private void breakFriendship(User user, User friend) {
+        user.getFriends().remove(friend.getId());
+        friend.getFriends().remove(user.getId());
+
+        userStorage.update(user);
+        userStorage.update(friend);
     }
 
     public Collection<User> getFriends(Integer userId) {

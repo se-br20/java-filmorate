@@ -30,17 +30,21 @@ public class FilmService {
     }
 
     public Film update(Film film) {
-        if (film.getId() == null || !filmStorage.exists(film.getId())) {
-            throw new NotFoundException("Фильм с id " + film.getId() + " не найден");
-        }
         Film stored = filmStorage.findById(film.getId())
                 .orElseThrow(() -> new NotFoundException("Фильм с id " + film.getId() + " не найден"));
 
-        if (film.getName() != null && !film.getName().isBlank()) stored.setName(film.getName());
-        if (film.getDescription() != null && !film.getDescription().isBlank())
+        if (film.getName() != null && !film.getName().isBlank()) {
+            stored.setName(film.getName());
+        }
+        if (film.getDescription() != null && !film.getDescription().isBlank()) {
             stored.setDescription(film.getDescription());
-        if (film.getReleaseDate() != null) stored.setReleaseDate(film.getReleaseDate());
-        if (film.getDuration() != null) stored.setDuration(film.getDuration());
+        }
+        if (film.getReleaseDate() != null) {
+            stored.setReleaseDate(film.getReleaseDate());
+        }
+        if (film.getDuration() != null && film.getDuration() > 0) {
+            stored.setDuration(film.getDuration());
+        }
         filmStorage.update(stored);
         log.info("Обновлён фильм: {}", stored.getId());
         return stored;
@@ -58,7 +62,7 @@ public class FilmService {
         Film film = getById(filmId);
         film.getLikes().add(userId);
         filmStorage.update(film);
-        log.info("User {} liked film {}", userId, filmId);
+        log.info("User {} поставил лайк фильму {}", userId, filmId);
     }
 
     public void removeLike(Integer filmId, Integer userId) {
@@ -68,13 +72,13 @@ public class FilmService {
         Film film = getById(filmId);
         film.getLikes().remove(userId);
         filmStorage.update(film);
-        log.info("User {} removed like from film {}", userId, filmId);
+        log.info("User {} отменил лайк фильма {}", userId, filmId);
     }
 
     public Collection<Film> getPopular(int count) {
         return filmStorage.findAll().stream()
                 .sorted(Comparator.comparingInt((Film f) -> f.getLikes().size()).reversed())
-                .limit(Math.max(0, count))
-                .collect(Collectors.toList());
+                .limit(count)
+                .toList();
     }
 }

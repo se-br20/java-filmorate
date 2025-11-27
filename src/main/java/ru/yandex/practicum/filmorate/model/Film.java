@@ -31,6 +31,11 @@ public class Film {
 
     private Set<Integer> likes = new HashSet<>();
 
+    @NotNull(groups = Create.class, message = "Необходимо указать рейтинг MPA")
+    private Mpa mpa;
+
+    private Set<Genre> genres = new HashSet<>();
+
     private static final LocalDate MIN_RELEASE_DATE = LocalDate.of(1895, 12, 28);
 
     @AssertTrue(groups = {Create.class, Update.class}, message = "Дата релиза должна быть позже 28 декабря 1895 года")

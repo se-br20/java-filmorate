@@ -30,6 +30,9 @@ public class FilmService {
     }
 
     public Film update(Film film) {
+        if (film.getId() == null) {
+            throw new NotFoundException("Фильм с id null не найден");
+        }
         Film stored = filmStorage.findById(film.getId())
                 .orElseThrow(() -> new NotFoundException("Фильм с id " + film.getId() + " не найден"));
 

@@ -30,11 +30,13 @@ public class UserService {
     }
 
     public User update(User user) {
-        if (user.getId() == null || !userStorage.exists(user.getId())) {
-            throw new NotFoundException("User с id " + user.getId() + " не найден");
+        if (user.getId() == null) {
+            throw new NotFoundException("User с id null не найден");
         }
-        User stored = userStorage.findById(user.getId()).orElseThrow(
-                () -> new NotFoundException("User с id " + user.getId() + " не найден"));
+
+        User stored = userStorage.findById(user.getId())
+                .orElseThrow(() -> new NotFoundException("User с id " + user.getId() + " не найден"));
+
         if (user.getEmail() != null) {
             stored.setEmail(user.getEmail());
         }

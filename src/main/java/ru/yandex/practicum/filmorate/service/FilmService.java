@@ -6,6 +6,8 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.genre.GenreStorage;
+import ru.yandex.practicum.filmorate.storage.mpa.MpaStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.Collection;
@@ -16,11 +18,17 @@ import java.util.Comparator;
 public class FilmService {
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
+    private final MpaStorage mpaStorage;
+    private final GenreStorage genreStorage;
 
     public FilmService(@Qualifier("filmDbStorage") FilmStorage filmStorage,
-                       @Qualifier("userDbStorage") UserStorage userStorage) {
+                       @Qualifier("userDbStorage") UserStorage userStorage,
+                       MpaStorage mpaStorage,
+                       GenreStorage genreStorage) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
+        this.mpaStorage = mpaStorage;
+        this.genreStorage = genreStorage;
     }
 
     public Collection<Film> findAll() {
@@ -28,6 +36,7 @@ public class FilmService {
     }
 
     public Film create(Film film) {
+        validateMpaAndGenres(film);
         return filmStorage.create(film);
     }
 
@@ -35,6 +44,7 @@ public class FilmService {
         if (film.getId() == null) {
             throw new NotFoundException("Фильм с id null не найден");
         }
+
         Film stored = filmStorage.findById(film.getId())
                 .orElseThrow(() -> new NotFoundException("Фильм с id " + film.getId() + " не найден"));
 
@@ -56,6 +66,7 @@ public class FilmService {
         if (film.getGenres() != null) {
             stored.setGenres(film.getGenres());
         }
+        validateMpaAndGenres(stored);
 
         filmStorage.update(stored);
         log.info("Обновлён фильм: {}", stored.getId());
@@ -87,8 +98,30 @@ public class FilmService {
 
     public Collection<Film> getPopular(int count) {
         return filmStorage.findAll().stream()
-                .sorted(Comparator.comparingInt((Film f) -> f.getLikes().size()).reversed())
+                .sorted(
+                        Comparator.<Film>comparingInt(f -> f.getLikes().size())
+                                .reversed()
+                                .thenComparingInt(Film::getId)
+                )
                 .limit(count)
                 .toList();
+    }
+
+    private void validateMpaAndGenres(Film film) {
+        if (film.getMpa() != null && film.getMpa().getId() != null) {
+            Integer mpaId = film.getMpa().getId();
+            mpaStorage.findById(mpaId)
+                    .orElseThrow(() -> new NotFoundException("Рейтинг MPA с id " + mpaId + " не найден"));
+        }
+
+        if (film.getGenres() != null) {
+            film.getGenres().stream()
+                    .filter(g -> g.getId() != null)
+                    .forEach(g -> {
+                        Integer genreId = g.getId();
+                        genreStorage.findById(genreId)
+                                .orElseThrow(() -> new NotFoundException("Жанр с id " + genreId + " не найден"));
+                    });
+        }
     }
 }

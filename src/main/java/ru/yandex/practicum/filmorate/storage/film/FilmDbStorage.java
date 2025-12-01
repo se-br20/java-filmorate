@@ -84,8 +84,7 @@ public class FilmDbStorage implements FilmStorage {
         if (films.isEmpty()) {
             return Optional.empty();
         }
-
-        Film film = films.getFirst();
+        Film film = films.get(0);
         loadGenres(List.of(film));
         loadLikes(List.of(film));
         return Optional.of(film);
@@ -142,7 +141,6 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public void addLike(Integer filmId, Integer userId) {
-        // MERGE вместо ON CONFLICT: корректно для H2
         String sql = "MERGE INTO film_likes (film_id, user_id) KEY (film_id, user_id) VALUES (?, ?)";
         jdbcTemplate.update(sql, filmId, userId);
     }
@@ -156,7 +154,6 @@ public class FilmDbStorage implements FilmStorage {
     private void loadGenres(Collection<Film> films) {
         if (films.isEmpty()) return;
         List<Integer> ids = films.stream().map(Film::getId).toList();
-
         String inSql = ids.stream().map(i -> "?").collect(Collectors.joining(","));
         String sql = """
                 SELECT fg.film_id, g.id, g.name

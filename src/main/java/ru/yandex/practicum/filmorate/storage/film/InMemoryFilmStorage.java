@@ -39,6 +39,22 @@ public class InMemoryFilmStorage implements FilmStorage {
         return films.containsKey(id);
     }
 
+    @Override
+    public void addLike(Integer filmId, Integer userId) {
+        Film film = films.get(filmId);
+        if (film != null) {
+            film.getLikes().add(userId);
+        }
+    }
+
+    @Override
+    public void removeLike(Integer filmId, Integer userId) {
+        Film film = films.get(filmId);
+        if (film != null) {
+            film.getLikes().remove(userId);
+        }
+    }
+
     private int nextId() {
         return films.keySet().stream().mapToInt(i -> i).max().orElse(0) + 1;
     }

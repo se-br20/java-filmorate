@@ -85,7 +85,7 @@ public class FilmDbStorage implements FilmStorage {
             return Optional.empty();
         }
 
-        Film film = films.get(0);
+        Film film = films.getFirst();
         loadGenres(List.of(film));
         loadLikes(List.of(film));
         return Optional.of(film);
@@ -140,7 +140,18 @@ public class FilmDbStorage implements FilmStorage {
         return count != null && count > 0;
     }
 
-    /* --------- служебные методы --------- */
+    @Override
+    public void addLike(Integer filmId, Integer userId) {
+        // MERGE вместо ON CONFLICT: корректно для H2
+        String sql = "MERGE INTO film_likes (film_id, user_id) KEY (film_id, user_id) VALUES (?, ?)";
+        jdbcTemplate.update(sql, filmId, userId);
+    }
+
+    @Override
+    public void removeLike(Integer filmId, Integer userId) {
+        String sql = "DELETE FROM film_likes WHERE film_id = ? AND user_id = ?";
+        jdbcTemplate.update(sql, filmId, userId);
+    }
 
     private void loadGenres(Collection<Film> films) {
         if (films.isEmpty()) return;
@@ -192,18 +203,5 @@ public class FilmDbStorage implements FilmStorage {
         film.getGenres().forEach(g ->
                 jdbcTemplate.update(insertSql, film.getId(), g.getId())
         );
-    }
-
-    @Override
-    public void addLike(Integer filmId, Integer userId) {
-        String sql = "INSERT INTO film_likes (film_id, user_id) VALUES (?, ?) " +
-                "ON CONFLICT (film_id, user_id) DO NOTHING";
-        jdbcTemplate.update(sql, filmId, userId);
-    }
-
-    @Override
-    public void removeLike(Integer filmId, Integer userId) {
-        String sql = "DELETE FROM film_likes WHERE film_id = ? AND user_id = ?";
-        jdbcTemplate.update(sql, filmId, userId);
     }
 }

@@ -6,12 +6,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.storage.film.FilmDbStorage;
 
+import java.sql.Date;
+import java.sql.PreparedStatement;
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -22,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class FilmDbStorageTest {
 
     private final FilmDbStorage filmStorage;
+    private final JdbcTemplate jdbcTemplate; // <-- вот это нужно для createUser()
 
     private Film buildFilm() {
         Film film = new Film();
@@ -31,10 +38,26 @@ class FilmDbStorageTest {
         film.setDuration(120);
 
         Mpa mpa = new Mpa();
-        mpa.setId(1);
+        mpa.setId(1); // есть в data.sql
         film.setMpa(mpa);
 
         return film;
+    }
+
+    private Integer createUser() {
+        String sql = "INSERT INTO users (email, login, name, birthday) VALUES (?, ?, ?, ?)";
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+
+        jdbcTemplate.update(connection -> {
+            PreparedStatement ps = connection.prepareStatement(sql, new String[]{"id"});
+            ps.setString(1, "user@mail.ru");
+            ps.setString(2, "user");
+            ps.setString(3, "User");
+            ps.setDate(4, Date.valueOf(LocalDate.of(2000, 1, 1)));
+            return ps;
+        }, keyHolder);
+
+        return keyHolder.getKey().intValue();
     }
 
     @Test
@@ -101,5 +124,42 @@ class FilmDbStorageTest {
 
         assertThat(filmStorage.exists(created.getId())).isTrue();
         assertThat(filmStorage.exists(9999)).isFalse();
+    }
+
+    @Test
+    void testAddLike() {
+        Film film = buildFilm();
+        Film createdFilm = filmStorage.create(film);
+        Integer userId = createUser();
+
+        filmStorage.addLike(createdFilm.getId(), userId);
+
+        var found = filmStorage.findById(createdFilm.getId());
+
+        assertThat(found)
+                .isPresent()
+                .hasValueSatisfying(f -> {
+                    Set<Integer> likes = f.getLikes();
+                    assertThat(likes).contains(userId);
+                });
+    }
+
+    @Test
+    void testRemoveLike() {
+        Film film = buildFilm();
+        Film createdFilm = filmStorage.create(film);
+        Integer userId = createUser();
+
+        filmStorage.addLike(createdFilm.getId(), userId);
+        filmStorage.removeLike(createdFilm.getId(), userId);
+
+        var found = filmStorage.findById(createdFilm.getId());
+
+        assertThat(found)
+                .isPresent()
+                .hasValueSatisfying(f -> {
+                    Set<Integer> likes = f.getLikes();
+                    assertThat(likes).doesNotContain(userId);
+                });
     }
 }

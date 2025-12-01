@@ -1,9 +1,11 @@
 package ru.yandex.practicum.filmorate.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.friendship.FriendshipStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.Collection;
@@ -15,9 +17,12 @@ import java.util.stream.Collectors;
 @Service
 public class UserService {
     private final UserStorage userStorage;
+    private final FriendshipStorage friendshipStorage;
 
-    public UserService(UserStorage userStorage) {
+    public UserService(@Qualifier("userDbStorage") UserStorage userStorage,
+                       FriendshipStorage friendshipStorage) {
         this.userStorage = userStorage;
+        this.friendshipStorage = friendshipStorage;
     }
 
     public Collection<User> findAll() {
@@ -64,55 +69,44 @@ public class UserService {
         if (!userStorage.exists(userId) || !userStorage.exists(friendId)) {
             throw new NotFoundException("User не найден");
         }
-        User user = getById(userId);
-        User friend = getById(friendId);
 
-        makeFriends(user, friend);
-
-        log.info("User {} и {} теперь друзья", userId, friendId);
+        friendshipStorage.addFriend(userId, friendId);
+        log.info("User {} добавил в друзья (односторонне) user {}", userId, friendId);
     }
 
     public void removeFriend(Integer userId, Integer friendId) {
-        User user = getById(userId);
-        User friend = getById(friendId);
+        if (!userStorage.exists(userId) || !userStorage.exists(friendId)) {
+            throw new NotFoundException("User не найден");
+        }
 
-        breakFriendship(user, friend);
-
-        log.info("User {} удалён из друзей {}", friendId, userId);
-    }
-
-    private void makeFriends(User user, User friend) {
-        user.getFriends().add(friend.getId());
-        friend.getFriends().add(user.getId());
-
-        userStorage.update(user);
-        userStorage.update(friend);
-    }
-
-    private void breakFriendship(User user, User friend) {
-        user.getFriends().remove(friend.getId());
-        friend.getFriends().remove(user.getId());
-
-        userStorage.update(user);
-        userStorage.update(friend);
+        friendshipStorage.removeFriend(userId, friendId);
+        log.info("User {} удалил из друзей user {}", userId, friendId);
     }
 
     public Collection<User> getFriends(Integer userId) {
-        User user = getById(userId);
-        Set<Integer> friendsIds = user.getFriends();
+        if (!userStorage.exists(userId)) {
+            throw new NotFoundException("User с id " + userId + " не найден");
+        }
+        Set<Integer> friendsIds = friendshipStorage.getFriendsIds(userId);
         return friendsIds.stream()
                 .map(this::getById)
                 .collect(Collectors.toList());
     }
 
     public Collection<User> getCommonFriends(Integer userId, Integer otherId) {
-        User user = getById(userId);
-        User other = getById(otherId);
+        if (!userStorage.exists(userId) || !userStorage.exists(otherId)) {
+            throw new NotFoundException("User не найден");
+        }
 
-        Set<Integer> common = new HashSet<>(user.getFriends());
-        common.retainAll(other.getFriends());
+        Set<Integer> userFriends = friendshipStorage.getFriendsIds(userId);
+        Set<Integer> otherFriends = friendshipStorage.getFriendsIds(otherId);
 
-        return common.stream().map(this::getById).collect(Collectors.toList());
+        Set<Integer> common = new HashSet<>(userFriends);
+        common.retainAll(otherFriends);
+
+        return common.stream()
+                .map(this::getById)
+                .collect(Collectors.toList());
     }
 
     private void ensureNameForCreate(User user) {

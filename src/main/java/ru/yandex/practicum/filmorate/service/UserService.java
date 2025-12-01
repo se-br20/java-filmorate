@@ -1,6 +1,7 @@
 package ru.yandex.practicum.filmorate.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
@@ -16,7 +17,7 @@ import java.util.stream.Collectors;
 public class UserService {
     private final UserStorage userStorage;
 
-    public UserService(UserStorage userStorage) {
+    public UserService(@Qualifier("userDbStorage") UserStorage userStorage) {
         this.userStorage = userStorage;
     }
 
@@ -83,18 +84,12 @@ public class UserService {
 
     private void makeFriends(User user, User friend) {
         user.getFriends().add(friend.getId());
-        friend.getFriends().add(user.getId());
-
         userStorage.update(user);
-        userStorage.update(friend);
     }
 
     private void breakFriendship(User user, User friend) {
         user.getFriends().remove(friend.getId());
-        friend.getFriends().remove(user.getId());
-
         userStorage.update(user);
-        userStorage.update(friend);
     }
 
     public Collection<User> getFriends(Integer userId) {

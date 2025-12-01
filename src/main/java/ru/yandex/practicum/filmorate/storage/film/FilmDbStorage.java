@@ -154,12 +154,13 @@ public class FilmDbStorage implements FilmStorage {
     private void loadGenres(Collection<Film> films) {
         if (films.isEmpty()) return;
         List<Integer> ids = films.stream().map(Film::getId).toList();
+
         String inSql = ids.stream().map(i -> "?").collect(Collectors.joining(","));
         String sql = """
-                SELECT fg.film_id, g.id, g.name
-                FROM film_genres fg
-                JOIN genres g ON fg.genre_id = g.id
-                WHERE fg.film_id IN (""" + inSql + ")";
+            SELECT fg.film_id, g.id, g.name
+            FROM film_genres fg
+            JOIN genres g ON fg.genre_id = g.id
+            WHERE fg.film_id IN (""" + inSql + ") ORDER BY g.id";
 
         Map<Integer, Film> filmMap = films.stream()
                 .collect(Collectors.toMap(Film::getId, f -> f));

@@ -5,7 +5,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.time.LocalDate;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 @Data
@@ -31,12 +31,12 @@ public class Film {
             message = "Продолжительность фильма должна быть больше 0")
     private Integer duration;
 
-    private Set<Integer> likes = new HashSet<>();
+    private Set<Integer> likes = new LinkedHashSet<>();
 
     @NotNull(groups = Create.class, message = "Необходимо указать рейтинг MPA")
     private Mpa mpa;
 
-    private Set<Genre> genres = new HashSet<>();
+    private Set<Genre> genres = new LinkedHashSet<>();
 
     private static final LocalDate MIN_RELEASE_DATE = LocalDate.of(1895, 12, 28);
 

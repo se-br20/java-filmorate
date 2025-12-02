@@ -42,8 +42,8 @@ public class FilmDbStorage implements FilmStorage {
             mpa.setName(rs.getString("mpa_name"));
             film.setMpa(mpa);
 
-            film.setGenres(new HashSet<>());
-            film.setLikes(new HashSet<>());
+            film.setGenres(new LinkedHashSet<>());
+            film.setLikes(new LinkedHashSet<>());
             return film;
         });
 
@@ -76,15 +76,16 @@ public class FilmDbStorage implements FilmStorage {
             mpa.setName(rs.getString("mpa_name"));
             film.setMpa(mpa);
 
-            film.setGenres(new HashSet<>());
-            film.setLikes(new HashSet<>());
+            film.setGenres(new LinkedHashSet<>());
+            film.setLikes(new LinkedHashSet<>());
             return film;
         }, id);
 
         if (films.isEmpty()) {
             return Optional.empty();
         }
-        Film film = films.get(0);
+
+        Film film = films.getFirst();
         loadGenres(List.of(film));
         loadLikes(List.of(film));
         return Optional.of(film);
@@ -151,16 +152,53 @@ public class FilmDbStorage implements FilmStorage {
         jdbcTemplate.update(sql, filmId, userId);
     }
 
+    @Override
+    public Collection<Film> findMostPopular(int count) {
+        String sql = """
+                SELECT f.id, f.name, f.description, f.release_date, f.duration,
+                       m.id AS mpa_id, m.name AS mpa_name
+                FROM films f
+                JOIN mpa_ratings m ON f.mpa_id = m.id
+                LEFT JOIN film_likes fl ON f.id = fl.film_id
+                GROUP BY f.id, f.name, f.description, f.release_date, f.duration, m.id, m.name
+                ORDER BY COUNT(fl.user_id) DESC, f.id
+                LIMIT ?
+                """;
+
+        List<Film> films = jdbcTemplate.query(sql, (rs, rowNum) -> {
+            Film film = new Film();
+            film.setId(rs.getInt("id"));
+            film.setName(rs.getString("name"));
+            film.setDescription(rs.getString("description"));
+            film.setReleaseDate(rs.getDate("release_date").toLocalDate());
+            film.setDuration(rs.getInt("duration"));
+
+            Mpa mpa = new Mpa();
+            mpa.setId(rs.getInt("mpa_id"));
+            mpa.setName(rs.getString("mpa_name"));
+            film.setMpa(mpa);
+
+            film.setGenres(new LinkedHashSet<>());
+            film.setLikes(new LinkedHashSet<>());
+            return film;
+        }, count);
+
+        loadGenres(films);
+        loadLikes(films);
+
+        return films;
+    }
+
     private void loadGenres(Collection<Film> films) {
         if (films.isEmpty()) return;
         List<Integer> ids = films.stream().map(Film::getId).toList();
 
         String inSql = ids.stream().map(i -> "?").collect(Collectors.joining(","));
         String sql = """
-            SELECT fg.film_id, g.id, g.name
-            FROM film_genres fg
-            JOIN genres g ON fg.genre_id = g.id
-            WHERE fg.film_id IN (""" + inSql + ") ORDER BY g.id";
+                SELECT fg.film_id, g.id, g.name
+                FROM film_genres fg
+                JOIN genres g ON fg.genre_id = g.id
+                WHERE fg.film_id IN (""" + inSql + ") ORDER BY g.id";
 
         Map<Integer, Film> filmMap = films.stream()
                 .collect(Collectors.toMap(Film::getId, f -> f));

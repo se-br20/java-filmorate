@@ -5,21 +5,33 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.genre.GenreStorage;
+import ru.yandex.practicum.filmorate.storage.mpa.MpaStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 public class FilmService {
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
+    private final MpaStorage mpaStorage;
+    private final GenreStorage genreStorage;
 
     public FilmService(@Qualifier("filmDbStorage") FilmStorage filmStorage,
-                       @Qualifier("userDbStorage") UserStorage userStorage) {
+                       @Qualifier("userDbStorage") UserStorage userStorage,
+                       MpaStorage mpaStorage,
+                       GenreStorage genreStorage) {
         this.filmStorage = filmStorage;
         this.userStorage = userStorage;
+        this.mpaStorage = mpaStorage;
+        this.genreStorage = genreStorage;
     }
 
     public Collection<Film> findAll() {
@@ -27,6 +39,20 @@ public class FilmService {
     }
 
     public Film create(Film film) {
+        if (film.getMpa() == null || film.getMpa().getId() == null) {
+            throw new NotFoundException("Рейтинг MPA не указан");
+        }
+        Integer mpaId = film.getMpa().getId();
+        mpaStorage.findById(mpaId)
+                .orElseThrow(() -> new NotFoundException("Рейтинг MPA с id " + mpaId + " не найден"));
+        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
+            Set<Genre> validatedGenres = film.getGenres().stream()
+                    .map(g -> genreStorage.findById(g.getId())
+                            .orElseThrow(() -> new NotFoundException("Жанр с id " + g.getId() + " не найден")))
+                    .collect(Collectors.toCollection(LinkedHashSet::new)); // сохраняем порядок и уникальность
+            film.setGenres(validatedGenres);
+        }
+
         return filmStorage.create(film);
     }
 
@@ -54,6 +80,19 @@ public class FilmService {
         }
         if (film.getGenres() != null) {
             stored.setGenres(film.getGenres());
+        }
+        if (stored.getMpa() == null || stored.getMpa().getId() == null) {
+            throw new NotFoundException("Рейтинг MPA не указан");
+        }
+        Integer mpaId = stored.getMpa().getId();
+        mpaStorage.findById(mpaId)
+                .orElseThrow(() -> new NotFoundException("Рейтинг MPA с id " + mpaId + " не найден"));
+        if (stored.getGenres() != null && !stored.getGenres().isEmpty()) {
+            Set<Genre> validatedGenres = stored.getGenres().stream()
+                    .map(g -> genreStorage.findById(g.getId())
+                            .orElseThrow(() -> new NotFoundException("Жанр с id " + g.getId() + " не найден")))
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+            stored.setGenres(validatedGenres);
         }
 
         filmStorage.update(stored);
